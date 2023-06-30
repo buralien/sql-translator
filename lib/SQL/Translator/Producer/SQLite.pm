@@ -25,7 +25,7 @@ use SQL::Translator::Utils qw(debug header_comment parse_dbms_version batch_alte
 use SQL::Translator::Generator::DDL::SQLite;
 
 our ( $DEBUG, $WARN );
-our $VERSION = '1.63';
+our $VERSION = '1.64';
 $DEBUG = 0 unless defined $DEBUG;
 $WARN = 0 unless defined $WARN;
 
@@ -287,7 +287,17 @@ sub create_foreignkey {
     return $fk_sql;
 }
 
-sub create_field { return _generator()->field($_[0]) }
+sub create_field { 
+    my ($field, $options) = @_;
+    my $name = $field->name;
+    my %extra = $field->extra;
+    my $result = _generator()->field($options);
+    if ($extra{collate}) {
+        my $collate = $extra{collate};
+        $result =~ s{ (\b $name \b .*?) [,] }{$1 COLLATE $collate,}ixms;
+    }
+    return $result;
+}
 
 sub create_index
 {
